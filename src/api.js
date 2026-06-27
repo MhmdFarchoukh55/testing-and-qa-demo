@@ -16,9 +16,30 @@ export function createApp() {
   // POST /checkout { items, code? } -> 200 { subtotal, waiver, total } | 400
   // TODO(student): validate the body, else respond with feesSubtotal/feesTotal
   // and waiver = subtotal - total.
-  app.post("/checkout", (req, res) => {
-    res.status(501).json({ error: "TODO(student): implement POST /checkout" });
+ app.post("/checkout", (req, res) => {
+  const { items, code } = req.body;
+
+  if (!Array.isArray(items)) {
+    return res.status(400).json({ error: "items must be an array" });
+  }
+
+  const hasInvalidItem = items.some((item) => {
+    return (
+      typeof item.daysLate !== "number" ||
+      typeof item.dailyRate !== "number"
+    );
   });
+
+  if (hasInvalidItem) {
+    return res.status(400).json({ error: "invalid item" });
+  }
+
+  const subtotal = feesSubtotal(items);
+  const total = feesTotal(items, code);
+  const waiver = Number((subtotal - total).toFixed(2));
+
+  res.json({ subtotal, waiver, total });
+});
 
   return app;
 }
